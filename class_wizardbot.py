@@ -4,6 +4,7 @@ import re
 import urllib.request
 import urllib
 import logging
+import json
 
 from discord.ext import commands
 
@@ -348,8 +349,10 @@ class WizardBot:
         await self.ehp_worker(ctx, "Construction")
 
 def start_bot():
-    DISCORD_TOKEN = "" #TODO: Make this read out of a config file instead of hard coding it
-    VERSION = "0.0.1"
+    with open('config.json', 'r') as f:
+      array = json.load(f)
+    DISCORD_TOKEN = array['DISCORD_TOKEN']
+    VERSION = array['VERSION']
     bot = commands.Bot(command_prefix=commands.when_mentioned_or('?'), description='A bot for Ironscape', version=VERSION)
     bot.add_cog(WizardBot(bot))
 

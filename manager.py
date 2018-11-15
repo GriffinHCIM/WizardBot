@@ -13,14 +13,14 @@ def main():
     parser = argparse.ArgumentParser(description='Wizardbot manager', fromfile_prefix_chars='@',prog='PROG')
     subparsers = parser.add_subparsers()
 
-    parser_user = subparsers.add_parser('start')
-    parser_user.set_defaults(func=start_program)
+    parser_start = subparsers.add_parser('start')
+    parser_start.set_defaults(func=start_program)
 
-    parser_skill = subparsers.add_parser('stop')
-    parser_skill.set_defaults(func=stop_program)
+    parser_stop = subparsers.add_parser('stop')
+    parser_stop.set_defaults(func=stop_program)
 
-    parser_skill = subparsers.add_parser('restart')
-    parser_skill.set_defaults(func=restart_program)
+    parser_restart = subparsers.add_parser('restart')
+    parser_restart.set_defaults(func=restart_program)
 
     parsed = parser.parse_args()
     parsed.func(vars(parsed))
@@ -49,8 +49,7 @@ def call_wizardbot():
     try: # Do some actual work here
         print("Started Wizardbot")
         start_bot()
-        #time.sleep(30)
-        #print("Ended Wizardbot")
+        print("Ended Wizardbot")
 
     finally:
         os.unlink(PID_FILE)
