@@ -1,5 +1,6 @@
 import asyncio
 import discord # https://github.com/Rapptz/discord.py
+import feedparser # pip3 install feedparser
 import re
 import urllib.request
 import urllib
@@ -10,8 +11,6 @@ from discord.ext import commands
 
 class WizardBot:
     ## Common items
-
-    channel_dir = {}
 
     scoreboard_types = {
         'regular':'hiscore_oldschool',
@@ -59,17 +58,8 @@ class WizardBot:
 
     def __init__(self, bot):
         self.bot = bot
-        bot.loop.create_task(self.list_servers())
 
     ## Helper Functions
-
-    async def list_servers(self):
-        await self.bot.wait_until_ready()
-        while not self.bot.is_closed:
-            for server in self.bot.servers:
-                for channel in server.channels:
-                  self.channel_dir[channel.name] = channel
-            await asyncio.sleep(600)
 
     async def ehp_worker(self, ctx, skillname = "Overall"):
         splitmsg = ctx.message.content.split(" ", 1)
@@ -77,7 +67,6 @@ class WizardBot:
         if (len(splitmsg) == 2):
           cml_url = 'https://www.crystalmathlabs.com/tracker/api.php?type=trackehp&player=' + splitmsg[1]
           cml_url = cml_url.replace(" ", "%20")
-          print(cml_url)
 
           tmp = await self.bot.send_message(ctx.message.channel, "Checking with cml...")
           request = urllib.request.Request(cml_url, headers={'User-Agent': 'Mozilla/5.0'})
@@ -210,8 +199,12 @@ class WizardBot:
         counter = 0
         tmp = await self.bot.send_message(ctx.message.channel, 'Calculating messages...')
 
+        channel_dir = {}
+        for channel in ctx.message.server.channels:
+            channel_dir[channel.name] = channel
+        
         kicked_people = {}
-        async for log in self.bot.logs_from(self.channel_dir["kick-log"], limit=kick_limit):
+        async for log in self.bot.logs_from(channel_dir["kick-log"], limit=kick_limit):
             if re.search(regex, log.content):
               match = re.search(regex, log.content)
               kicked_people[match.group(2).strip()] = kicked_people.get(match.group(2).strip(), 0) + 1
@@ -227,6 +220,51 @@ class WizardBot:
         """ Simple command for testing if the bot is online """
         msg = 'Hello {0.author.mention}'.format(ctx.message)
         await self.bot.send_message(ctx.message.channel, msg)
+
+    @commands.command(pass_context=True, no_pm=True)
+    async def raidrules(self, ctx):
+        """ Displays the rules for Ironscape raids """
+        embed = discord.Embed(title="Raids Info", description="Please click [HERE](https://www.reddit.com/r/ironscape/comments/9qqabg/raid_cc_rules_and_info/) for all of our rules and information about Raiding within Raid CC, if you have any further queries or would like to get in touch with a member of the raid cc staff, please use the @Raids Staff role. if you are a learner please use the @Raids Teacher role to find help.")
+        await self.bot.send_message(ctx.message.channel, embed=embed)
+
+    @commands.command(pass_context=True, no_pm=True)
+    async def cc(self, ctx):
+        """Displays the cc information """
+        msg = 'https://i.imgur.com/tfWfHiT.png'
+        await self.bot.send_message(ctx.message.channel, msg)
+   
+    @commands.command(pass_context=True, no_pm=True)
+    async def reddit(self, ctx):
+        """Displays the reddit information """
+        msg = 'Ironscapes Reddit: https://www.reddit.com/r/ironscape/'
+        await self.bot.send_message(ctx.message.channel, msg)
+    
+    @commands.command(pass_context=True, no_pm=True)
+    async def twitter(self, ctx):
+        """Displays the twitter information """
+        msg = 'Ironscapes Twitter: https://twitter.com/IronmanCC'
+        await self.bot.send_message(ctx.message.channel, msg)
+
+    @commands.command(pass_context=True, no_pm=True)
+    async def news(self, ctx):
+        """Displays the latest news post about OldSchoolRS """
+        rss_url = "http://services.runescape.com/m=news/latest_news.rss?oldschool=true"
+        rss_parser = feedparser.parse(rss_url)
+        embed = discord.Embed(title=rss_parser["feed"]["title"], description=rss_parser["feed"]["description"], url="http://services.runescape.com/m=news/archive?oldschool=1", color=0x00ff00)
+        embed.add_field(name=rss_parser.entries[0].title,  value=str(rss_parser.entries[0].description)+" [Click Here]({0})".format(rss_parser.entries[0].link), inline=False)
+        embed.add_field(name=rss_parser.entries[1].title,  value=str(rss_parser.entries[1].description)+" [Click Here]({0})".format(rss_parser.entries[1].link), inline=False)
+        embed.add_field(name=rss_parser.entries[2].title,  value=str(rss_parser.entries[2].description)+" [Click Here]({0})".format(rss_parser.entries[2].link), inline=False)
+        embed.set_thumbnail(url=rss_parser.entries[0]["links"][0]["href"])
+        await self.bot.send_message(ctx.message.channel, embed=embed)
+
+    @commands.command(pass_context=True, no_pm=True)
+    async def wiki(self, ctx):
+        """Tries to link to the relevant wiki article """
+        splitmsg = ctx.message.content.split(" ", 1)
+        SearchTopic = splitmsg[1].replace(" ","%20")
+        embed = discord.Embed(title="Here is what I found on OSRSWiki", description="This is what OSRSWiki has to say about {1}".format(SearchTopic, splitmsg[1]), color=0x00ff00)
+        embed.url = "https://oldschool.runescape.wiki/w/Special:Search?search={0}".format(SearchTopic)
+        await self.bot.send_message(ctx.message.channel, embed=embed)
 
     @commands.command(pass_context=True, no_pm=True)
     async def ehp(self, ctx):
