@@ -88,11 +88,13 @@ class WizardBot:
           except urllib.error.HTTPError as err:
               await self.bot.edit_message(tmp, "CML doesn't want to talk to me at the moment. They responded with code {}".format(err.code))
 
-    def hsstring2dict(hs_string):
+    def hsstring2dict(self, hs_string):
         if hs_string == '':
             return dict()
 
-        spit_hs_string = hs_string.split()
+        #spit_hs_string = hs_string.split()
+        spit_hs_string = hs_string
+        
         split_raw_stats = []
 
         for raw_stats in spit_hs_string:
@@ -123,70 +125,70 @@ class WizardBot:
         hunter_dict = {'rank':split_raw_stats[22][0], 'level':split_raw_stats[22][1], 'experience':split_raw_stats[22][2]}
         construction_dict = {'rank':split_raw_stats[23][0], 'level':split_raw_stats[23][1], 'experience':split_raw_stats[23][2]}
 
-        return {'overall':overall_dict,
-                'attack':attack_dict,
-                'defence':defence_dict,
-                'strength':strength_dict,
-                'hitpoints':hitpoints_dict,
-                'range':range_dict,
-                'prayer':prayer_dict,
-                'magic':magic_dict,
-                'cooking':cooking_dict,
-                'woodcutting':woodcutting_dict,
-                'fletching':fletching_dict,
-                'fishing':fishing_dict,
-                'firemaking':firemaking_dict,
-                'crafting':crafting_dict,
-                'smithing':smithing_dict,
-                'mining':mining_dict,
-                'herblore':herblore_dict,
-                'agility':agility_dict,
-                'thieving':thieving_dict,
-                'slayer':slayer_dict,
-                'farming':farming_dict,
-                'runcrafting':runecrafting_dict,
-                'hunter':hunter_dict,
-                'construction':construction_dict}
+        return {'Overall':overall_dict,
+                'Attack':attack_dict,
+                'Defence':defence_dict,
+                'Strength':strength_dict,
+                'Hitpoints':hitpoints_dict,
+                'Range':range_dict,
+                'Prayer':prayer_dict,
+                'Magic':magic_dict,
+                'Cooking':cooking_dict,
+                'Woodcutting':woodcutting_dict,
+                'Fletching':fletching_dict,
+                'Fishing':fishing_dict,
+                'Firemaking':firemaking_dict,
+                'Crafting':crafting_dict,
+                'Smithing':smithing_dict,
+                'Mining':mining_dict,
+                'Herblore':herblore_dict,
+                'Agility':agility_dict,
+                'Thieving':thieving_dict,
+                'Slayer':slayer_dict,
+                'Farming':farming_dict,
+                'Runcrafting':runecrafting_dict,
+                'Hunter':hunter_dict,
+                'Construction':construction_dict}
 
-    def retrieve_hiscore_string(username, scoreboard='regular'):
+    def retrieve_hiscore_string(self, username, scoreboard='regular'):
         scoreboard_type = ''
 
-        if scoreboard in scoreboard_types:
-            scoreboard_type = scoreboard_types[scoreboard]
+        if scoreboard in self.scoreboard_types:
+            scoreboard_type = self.scoreboard_types[scoreboard]
         else:
             raise Error('Scoreboard not a valid type')
 
         url = "http://services.runescape.com/m=" + scoreboard_type + "/index_lite.ws?player=" + str(username)
         try:
-            info = urllib.urlopen(url).read()
+            #info = urllib.urlopen(url).read()
+            request = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            result = urllib.request.urlopen(request)
+            info = result.read().decode("utf-8").strip().split()
             return info
-        except urllib.HTTPError as e:
+        except:
             print(e)
             #raise Error('User not found')
 
-    def get_player_levels(args):
-        hs_string = retrieve_hiscore_string(args['username'], args['scoreboard'])
-        hs_dict = hsstring2dict(hs_string)
-        print(args['username'])
+    def get_player_levels(self, args):
+        hs_string = self.retrieve_hiscore_string(args['username'], args['scoreboard'])
+        hs_dict = self.hsstring2dict(hs_string)
+        #print(args['username'])
         tuple_list = []
         for subd in hs_dict:
             #print "\t" + subd + " : " + hs_dict[subd]['level'] + " " + hs_dict[subd]['rank']
             tuple_list += [(subd, int(hs_dict[subd]['level']), hs_dict[subd]['experience'], hs_dict[subd]['rank'])]
 
+        
+        msg = ""
         Overall = ""
-        tuple_list =  reversed(sorted(tuple_list, key=lambda x: int(x[2])))
         for skillrank in tuple_list:
             (skill, level, experience, rank) = skillrank
-            if (skill == "overall"):
-                Overall = "" + skill.ljust(13) + "\t" + str(level) + "\t" + rank + "\t{:,}".format(int(experience))
-            if (skill != "overall"):
-                if (level == 99):
-                    print("" + skill.ljust(13) + "\t" + str(level) + "\t" + rank + "\t{:,}".format(int(experience)))
-                else:
-                    print("" + skill.ljust(13) + "\t" + str(level) + "\t" + rank)
+            if (skill == "Overall"):
+                Overall = "" + skill.ljust(13) + ": \t" + str(level) + "\t" + rank + "\t{:,}".format(int(experience)) + "\n"
+            if (skill != "Overall"):
+                msg += "" + skill.ljust(13) + ": \t" + str(level) + "\t Rank: " + rank + "\t Exp: {:,}".format(int(experience)) + "\n"
 
-        print(Overall)
-        print("combat: " + str(int(combat_level(hs_dict))))
+        return msg + Overall
 
     ## Discord Commands
 
@@ -214,6 +216,33 @@ class WizardBot:
           msg += str(person) + " has been kicked " + str(kicked_people[person]) + " times\n"
 
         await self.bot.edit_message(tmp, msg)
+
+    @commands.command(pass_context=True)
+    async def rank(self, ctx):
+        """ Displays the overall rank of the username provided """
+        splitmsg = ctx.message.content.split(" ", 1)
+        username = splitmsg[1].replace(" ", "%20")
+        msg = self.get_player_levels({"username":username, "scoreboard":"ironman"})
+        embed = discord.Embed(title="Stats for: " + splitmsg[1], description=msg)
+        await self.bot.send_message(ctx.message.channel, embed=embed)
+
+    @commands.command(name="rank-hcim", pass_context=True)
+    async def rankhcim(self, ctx):
+        """ Displays the overall rank of the username provided """
+        splitmsg = ctx.message.content.split(" ", 1)
+        username = splitmsg[1].replace(" ", "%20")
+        msg = self.get_player_levels({"username":username, "scoreboard":"hardcore"})
+        embed = discord.Embed(title="Stats for: " + splitmsg[1], description=msg)
+        await self.bot.send_message(ctx.message.channel, embed=embed)
+    
+    @commands.command(name="rank-uim", pass_context=True)
+    async def rankulti(self, ctx):
+        """ Displays the overall rank of the username provided """
+        splitmsg = ctx.message.content.split(" ", 1)
+        username = splitmsg[1].replace(" ", "%20")
+        msg = self.get_player_levels({"username":username, "scoreboard":"ultimate"})
+        embed = discord.Embed(title="Stats for: " + splitmsg[1], description=msg)
+        await self.bot.send_message(ctx.message.channel, embed=embed)
 
     @commands.command(pass_context=True, no_pm=True)
     async def hello(self, ctx):
@@ -319,7 +348,7 @@ class WizardBot:
     @commands.command(name="ehp-fletching", pass_context=True, no_pm=True)
     async def ehp_fletching(self, ctx):
         """ ehp command uses crystalmathlabs api and gets the latest fletching ehp given a username """
-        await self.ehp_worker(ctx, "fletching")
+        await self.ehp_worker(ctx, "Fletching")
 
     @commands.command(name="ehp-fishing", pass_context=True, no_pm=True)
     async def ehp_fishing(self, ctx):

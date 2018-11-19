@@ -37,22 +37,24 @@ def start_program(Args=[]):
         sys.exit()
 
     newpid = os.fork() ## starts child process
-
+    
     if newpid == 0: ## if this is the child process do work
-        open(PID_FILE, 'w').write(str(os.getpid())) ## create file and put child pid in file
-        call_wizardbot()
+        while(True): ## if the bot loses connection/errors out it needs to come back online
+            try:
+                open(PID_FILE, 'w').write(str(os.getpid())) ## create file and put child pid in file
+                call_wizardbot()
+            finally:
+                os.unlink(PID_FILE)
 
     else: ## else this is the parent process still
         None ## not the forked child so do nothing
 
 def call_wizardbot():
-    try: # Do some actual work here
-        print("Started Wizardbot")
-        start_bot()
-        print("Ended Wizardbot")
-
-    finally:
-        os.unlink(PID_FILE)
+    print("Started Wizardbot")
+    print (time.localtime())
+    start_bot()
+    print("Ended Wizardbot")
+    print (time.localtime())
 
 def stop_program(Args=[]):
     if os.path.isfile(PID_FILE):
