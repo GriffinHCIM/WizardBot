@@ -10,6 +10,10 @@ This bot is currently in active developement, because of this code organization 
 
 # New Features!
 
+**11/19/2018 Update:**
+  - ?rank, ?rank-hcim, ?rank-uim commands
+  - bot now reconnects after it loses connection from the server
+
 **11/16/2018 Update:**
   - ?cc, ?reddit, ?twitter, ?raidrules, ?news, ?wiki commands
   - changed ?kick-summary command to correctly pull that servers channels
