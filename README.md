@@ -10,9 +10,13 @@ This bot is currently in active developement, because of this code organization 
 
 # New Features!
 
+**11/16/2018 Update:**
+  - ?cc, ?reddit, ?twitter, ?raidrules, ?news, ?wiki commands
+  - changed ?kick-summary command to correctly pull that servers channels
+
 **11/05/2018 Update:**
   - This repo!
-  - ?ehp, ?ehp-{skill_name}, ?kick-check commands
+  - ?ehp, ?ehp-{skill_name}, ?kick-summary commands
   - manager script to start/stop/restart WizardBot
   - WizardBot class added
 
