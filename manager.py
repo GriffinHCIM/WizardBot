@@ -3,11 +3,13 @@ import sys
 import time
 import argparse
 import signal
+import json
 
 #from wizardbot import start_bot
 from class_wizardbot import start_bot
 
-PID_FILE = "/tmp/wizardbot.pid"
+PID_FILE = "/tmp/wizardbot"
+VERSION = "0.0.0"
 
 def main():
     parser = argparse.ArgumentParser(description='Wizardbot manager', fromfile_prefix_chars='@',prog='PROG')
@@ -45,6 +47,7 @@ def start_program(Args=[]):
                 call_wizardbot()
             finally:
                 os.unlink(PID_FILE)
+                time.sleep(60)
 
     else: ## else this is the parent process still
         None ## not the forked child so do nothing
@@ -78,4 +81,8 @@ def stop_program(Args=[]):
         print("ERROR: Wizardbot is not currently running")
 
 if __name__ == '__main__':
+    with open('config.json', 'r') as f:
+      array = json.load(f)
+    PID_FILE += array["VERSION"]
+    print(PID_FILE)
     main()

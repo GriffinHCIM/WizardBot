@@ -6,7 +6,10 @@ import urllib.request
 import urllib
 import logging
 import json
+import time
+import os
 
+from bot_memory import bot_memory
 from discord.ext import commands
 
 class WizardBot:
@@ -58,6 +61,23 @@ class WizardBot:
 
     def __init__(self, bot):
         self.bot = bot
+        #bot.loop.create_task(self.message_manager())
+
+    async def message_manager(self):
+        while (True):
+            for directory in [f.path for f in os.scandir("memory/") if f.is_dir() ]:
+                #print (directory)
+                memory = bot_memory(directory)
+                reminders = memory.get_reminders()
+                for reminder in reminders["memory"]:
+                    if (int(reminder["epoch"]) < time.time()):
+                        print ("time to send out:" + reminder["user"] + " " + reminder["message"])
+                        channel = discord.Object(id=reminder["user"])
+                        await self.bot.send_message(channel, reminder["message"])
+
+                #print (memory.get_reminders())
+            #print ("testing")
+            await asyncio.sleep(60)
 
     ## Helper Functions
 
@@ -191,6 +211,34 @@ class WizardBot:
         return msg + Overall
 
     ## Discord Commands
+    @commands.command(name="reminder", pass_context=True)
+    async def reminder(self, ctx, timer : int, *usermsg):
+        if (timer >= 60*60*24*365):
+            await self.bot.send_message(ctx.message.channel, "No reminders longer then 1 year please")
+            return
+
+        if (timer <= 60*10):
+            await self.bot.send_message(ctx.message.channel, "No reminders less then 10 mins please")
+            return 
+
+        split_message = ctx.message.content.split(" ",2)
+        epoch_time = int(time.time())
+        reminder_time = epoch_time + timer
+        msg = "Ok I'll make a note about that and remind you later about it.\nI've send you the following message in " + str(reminder_time) + ":\n" + split_message[2]   
+        
+        
+        memory_path = "memory/PMs"
+        if ctx.message.server:
+            memory_path = "memory/" + ctx.message.server.name
+        
+        memory = bot_memory(memory_path)
+
+        print (ctx.message.author)
+        memory.update_reminders([{"epoch":reminder_time, "user":str(ctx.message.author.id), "message":split_message[2]}])
+        #print (timer)
+        #print (usermsg)
+        await self.bot.send_message(ctx.message.channel, msg)
+
 
     @commands.command(name="kick-summary", pass_context=True, no_pm=True)
     async def kicksummary(self, ctx, *, kick_limit : int = 100):
@@ -415,6 +463,27 @@ class WizardBot:
         """ ehp command uses crystalmathlabs api and gets the latest construction ehp given a username """
         await self.ehp_worker(ctx, "Construction")
 
+
+
+async def message_manager(bot):
+    while (True):
+
+        await asyncio.sleep(60)
+        for directory in [f.path for f in os.scandir("memory/") if f.is_dir() ]:
+                #print (directory)
+            memory = bot_memory(directory)
+            reminders = memory.get_reminders()
+            for reminder in reminders["memory"]:
+                if (int(reminder["epoch"]) < time.time()):
+                    print ("time to send out:" + reminder["user"] + " " + reminder["message"])
+                    channel = discord.Object(id=reminder["user"])
+                    await bot.send_message(channel, reminder["message"])
+
+                #print (memory.get_reminders())
+            #print ("testing")
+
+
+
 def start_bot():
     with open('config.json', 'r') as f:
       array = json.load(f)
@@ -428,6 +497,8 @@ def start_bot():
         print('\nLogged in as:\n{0} (ID: {0.id}) on the follow servers:'.format(bot.user))
         for server in bot.servers:
             print("\t{0}".format(server.name))
+
+    #bot.loop.create_task(message_manager(bot))
 
     bot.run(DISCORD_TOKEN)
 
